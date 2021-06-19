@@ -16,8 +16,7 @@ var AppConf = AppConfig{
 		SchemaVersion: "1",
 		Colnames: map[string]string{
 			"yahoo_asset_profiles": "yahoo_asset_profiles",
-			"asset_countries":      "asset_countries",
-			"asset_sectors":        "asset_sectors",
+			"assets":               "assets",
 		},
 	},
 }

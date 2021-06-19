@@ -3,32 +3,32 @@ package repos
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	logger "github.com/hthl85/aws-lambda-logger"
 	"github.com/hthl85/aws-yahoo-asset-profile-scraper/config"
 	"github.com/hthl85/aws-yahoo-asset-profile-scraper/consts"
 	"github.com/hthl85/aws-yahoo-asset-profile-scraper/entities"
-	"github.com/hthl85/aws-yahoo-asset-profile-scraper/infrastructure/repositories/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// AssetProfileMongo struct
-type AssetProfileMongo struct {
+// AssetMongo struct
+type AssetMongo struct {
 	db     *mongo.Database
 	client *mongo.Client
 	log    logger.ContextLog
 	conf   *config.MongoConfig
 }
 
-// NewAssetProfileMongo creates new asset profile mongo repo
-func NewAssetProfileMongo(db *mongo.Database, l logger.ContextLog, conf *config.MongoConfig) (*AssetProfileMongo, error) {
+// NewAssetMongo creates new asset mongo repo
+func NewAssetMongo(db *mongo.Database, log logger.ContextLog, conf *config.MongoConfig) (*AssetMongo, error) {
 	if db != nil {
-		return &AssetProfileMongo{
+		return &AssetMongo{
 			db:   db,
-			log:  l,
+			log:  log,
 			conf: conf,
 		}, nil
 	}
@@ -65,16 +65,16 @@ func NewAssetProfileMongo(db *mongo.Database, l logger.ContextLog, conf *config.
 		return nil, err
 	}
 
-	return &AssetProfileMongo{
+	return &AssetMongo{
 		db:     client.Database(conf.Dbname),
 		client: client,
-		log:    l,
+		log:    log,
 		conf:   conf,
 	}, nil
 }
 
 // Close disconnect from database
-func (r *AssetProfileMongo) Close() {
+func (r *AssetMongo) Close() {
 	ctx := context.Background()
 	r.log.Info(ctx, "close mongo client")
 
@@ -87,56 +87,73 @@ func (r *AssetProfileMongo) Close() {
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Implement interface
-///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+// Implement repo interface
+///////////////////////////////////////////////////////////
 
-// UpsertAssetProfile upsert asset profile
-func (r *AssetProfileMongo) UpsertAssetProfile(ctx context.Context, assetProfile *entities.AssetProfile) error {
+// FindAssetsBySource find all assets by source
+func (r *AssetMongo) FindAssetsBySource(ctx context.Context, source string) ([]*entities.Asset, error) {
+
+	uppercaseSource := strings.ToUpper(source)
+
 	// create new context for the query
 	ctx, cancel := createContext(ctx, r.conf.TimeoutMS)
 	defer cancel()
 
-	m, err := models.NewAssetProfileModel(ctx, r.log, assetProfile)
-	if err != nil {
-		r.log.Error(ctx, "create model failed", "error", err)
-		return err
-	}
-
 	// what collection we are going to use
-	colname, ok := r.conf.Colnames[consts.YAHOO_ASSET_PROFILES_COLLECTION]
+	colname, ok := r.conf.Colnames[consts.ASSETS_COLLECTION]
 	if !ok {
 		r.log.Error(ctx, "cannot find collection name")
-		return fmt.Errorf("cannot find collection name")
+		return nil, fmt.Errorf("cannot find collection name")
 	}
 	col := r.db.Collection(colname)
 
-	filter := bson.D{{
-		Key:   "ticker",
-		Value: m.Ticker,
-	}}
-
-	update := bson.D{
+	// filter
+	filter := bson.D{
 		{
-			Key:   "$set",
-			Value: m,
-		},
-		{
-			Key: "$setOnInsert",
-			Value: bson.D{{
-				Key:   "createdAt",
-				Value: time.Now().UTC().Unix(),
-			}},
+			Key:   "source",
+			Value: uppercaseSource,
 		},
 	}
 
-	opts := options.Update().SetUpsert(true)
+	// find options
+	findOptions := options.Find()
 
-	_, err = col.UpdateOne(ctx, filter, update, opts)
+	cur, err := col.Find(ctx, filter, findOptions)
+
+	// only run defer function when find success
+	if cur != nil {
+		defer func() {
+			if deferErr := cur.Close(ctx); deferErr != nil {
+				err = deferErr
+			}
+		}()
+	}
+
+	// find was not succeed
 	if err != nil {
-		r.log.Error(ctx, "update one failed", "error", err)
-		return err
+		r.log.Error(ctx, "find query failed", "error", err)
+		return nil, err
 	}
 
-	return nil
+	var assets []*entities.Asset
+
+	// iterate over the cursor to decode document one at a time
+	for cur.Next(ctx) {
+		// decode cursor to activity model
+		var asset entities.Asset
+		if err = cur.Decode(&asset); err != nil {
+			r.log.Error(ctx, "decode failed", "error", err)
+			return nil, err
+		}
+
+		assets = append(assets, &asset)
+	}
+
+	if err := cur.Err(); err != nil {
+		r.log.Error(ctx, "iterate over cursor failed", "error", err)
+		return nil, err
+	}
+
+	return assets, nil
 }

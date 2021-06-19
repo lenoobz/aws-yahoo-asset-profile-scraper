@@ -13,6 +13,7 @@ import (
 	logger "github.com/hthl85/aws-lambda-logger"
 	"github.com/hthl85/aws-yahoo-asset-profile-scraper/config"
 	"github.com/hthl85/aws-yahoo-asset-profile-scraper/entities"
+	"github.com/hthl85/aws-yahoo-asset-profile-scraper/usecase/assets"
 	"github.com/hthl85/aws-yahoo-asset-profile-scraper/usecase/profile"
 )
 
@@ -20,17 +21,19 @@ import (
 type AssetProfileScraper struct {
 	ScrapeAssetProfileJob *colly.Collector
 	assetProfileService   *profile.Service
+	assetService          *assets.Service
 	log                   logger.ContextLog
 	errorTickers          []string
 }
 
 // NewAssetProfileScraper create new asset profile scraper
-func NewAssetProfileScraper(assetProfileService *profile.Service, log logger.ContextLog) *AssetProfileScraper {
+func NewAssetProfileScraper(assetService *assets.Service, assetProfileService *profile.Service, log logger.ContextLog) *AssetProfileScraper {
 	scrapeAssetProfileJob := newScraperJob()
 
 	return &AssetProfileScraper{
 		ScrapeAssetProfileJob: scrapeAssetProfileJob,
 		assetProfileService:   assetProfileService,
+		assetService:          assetService,
 		log:                   log,
 	}
 }
@@ -81,6 +84,33 @@ func (s *AssetProfileScraper) ScrapeAssetProfilesByTickers(tickers []string) {
 		s.log.Info(ctx, "scraping asset profile", "ticker", ticker)
 		if err := s.ScrapeAssetProfileJob.Request("GET", url, nil, reqContext, nil); err != nil {
 			s.log.Error(ctx, "scraping asset profile", "error", err, "ticker", ticker)
+		}
+	}
+
+	s.ScrapeAssetProfileJob.Wait()
+}
+
+// ScrapeAssetProfilesByTickers scrape asset profiles by tickers
+func (s *AssetProfileScraper) ScrapeAssetsBySource(source string) {
+	ctx := context.Background()
+
+	s.configJobs()
+
+	assets, err := s.assetService.FindAssetsBySource(ctx, source)
+	if err != nil {
+		s.log.Error(ctx, "scraping asset profile failed", "error", err)
+		return
+	}
+
+	for _, asset := range assets {
+		reqContext := colly.NewContext()
+		reqContext.Put("ticker", asset.Ticker)
+
+		url := config.GetAssetProfileByTickerURL(asset.Ticker)
+
+		s.log.Info(ctx, "scraping asset profile", "ticker", asset.Ticker)
+		if err := s.ScrapeAssetProfileJob.Request("GET", url, nil, reqContext, nil); err != nil {
+			s.log.Error(ctx, "scraping asset profile", "error", err, "ticker", asset.Ticker)
 		}
 	}
 

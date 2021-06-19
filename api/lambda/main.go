@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"log"
 
+	"github.com/aws/aws-lambda-go/lambda"
 	logger "github.com/hthl85/aws-lambda-logger"
 	"github.com/hthl85/aws-yahoo-asset-profile-scraper/config"
 	"github.com/hthl85/aws-yahoo-asset-profile-scraper/infrastructure/repositories/repos"
@@ -12,6 +14,12 @@ import (
 )
 
 func main() {
+	lambda.Start(lambdaHandler)
+}
+
+func lambdaHandler(ctx context.Context) {
+	log.Println("lambda handler is called")
+
 	appConf := config.AppConf
 
 	// create new logger
@@ -39,6 +47,7 @@ func main() {
 	assetService := assets.NewService(assetRepo, zap)
 	profileService := profile.NewService(assetProfileRepo, zap)
 
+	// create new scraper job
 	job := scraper.NewAssetProfileScraper(assetService, profileService, zap)
 	job.ScrapeAssetsBySource("TIP_RANK")
 	defer job.Close()
