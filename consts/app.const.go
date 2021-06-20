@@ -7,6 +7,7 @@ const (
 )
 
 const (
-	ASSET_CLASS = "EQUITY"
-	DATA_SOURCE = "YAHOO"
+	ASSET_CLASS     = "EQUITY"
+	DATA_SOURCE     = "YAHOO"
+	TIP_RANK_SOURCE = "TIP_RANK"
 )

@@ -15,21 +15,21 @@ type AssetProfile struct {
 	ModifiedAt int64               `bson:"modifiedAt,omitempty"`
 	Enabled    bool                `bson:"enabled,omitempty"`
 	Deleted    bool                `bson:"deleted,omitempty"`
+	Schema     string              `bson:"schema,omitempty"`
 	Ticker     string              `bson:"ticker,omitempty"`
 	Sector     string              `bson:"sector,omitempty"`
 	Country    string              `bson:"country,omitempty"`
 }
 
 // NewAssetProfileModel create asset profile model
-func NewAssetProfileModel(ctx context.Context, log logger.ContextLog, e *entities.AssetProfile) (*AssetProfile, error) {
-	m := &AssetProfile{
+func NewAssetProfileModel(ctx context.Context, log logger.ContextLog, assetProfile *entities.AssetProfile, schemaVersion string) (*AssetProfile, error) {
+	return &AssetProfile{
 		ModifiedAt: time.Now().UTC().Unix(),
 		Enabled:    true,
 		Deleted:    false,
-		Ticker:     e.Ticker,
-		Sector:     e.Sector,
-		Country:    e.Country,
-	}
-
-	return m, nil
+		Schema:     schemaVersion,
+		Ticker:     assetProfile.Ticker,
+		Sector:     assetProfile.Sector,
+		Country:    assetProfile.Country,
+	}, nil
 }

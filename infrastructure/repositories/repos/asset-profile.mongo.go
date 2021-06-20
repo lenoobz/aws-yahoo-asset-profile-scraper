@@ -97,7 +97,7 @@ func (r *AssetProfileMongo) UpsertAssetProfile(ctx context.Context, assetProfile
 	ctx, cancel := createContext(ctx, r.conf.TimeoutMS)
 	defer cancel()
 
-	m, err := models.NewAssetProfileModel(ctx, r.log, assetProfile)
+	m, err := models.NewAssetProfileModel(ctx, r.log, assetProfile, r.conf.SchemaVersion)
 	if err != nil {
 		r.log.Error(ctx, "create model failed", "error", err)
 		return err

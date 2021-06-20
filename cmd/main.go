@@ -5,6 +5,7 @@ import (
 
 	logger "github.com/hthl85/aws-lambda-logger"
 	"github.com/hthl85/aws-yahoo-asset-profile-scraper/config"
+	"github.com/hthl85/aws-yahoo-asset-profile-scraper/consts"
 	"github.com/hthl85/aws-yahoo-asset-profile-scraper/infrastructure/repositories/repos"
 	"github.com/hthl85/aws-yahoo-asset-profile-scraper/infrastructure/scraper"
 	"github.com/hthl85/aws-yahoo-asset-profile-scraper/usecase/assets"
@@ -40,6 +41,6 @@ func main() {
 	profileService := profile.NewService(assetProfileRepo, zap)
 
 	job := scraper.NewAssetProfileScraper(assetService, profileService, zap)
-	job.ScrapeAssetsBySource("TIP_RANK")
+	job.ScrapeAssetsBySource(consts.TIP_RANK_SOURCE)
 	defer job.Close()
 }
