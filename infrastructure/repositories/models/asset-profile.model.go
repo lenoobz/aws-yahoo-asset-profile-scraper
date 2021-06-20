@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type AssetProfile struct {
+type AssetProfileModel struct {
 	ID         *primitive.ObjectID `bson:"_id,omitempty"`
 	CreatedAt  int64               `bson:"createdAt,omitempty"`
 	ModifiedAt int64               `bson:"modifiedAt,omitempty"`
@@ -22,8 +22,8 @@ type AssetProfile struct {
 }
 
 // NewAssetProfileModel create asset profile model
-func NewAssetProfileModel(ctx context.Context, log logger.ContextLog, assetProfile *entities.AssetProfile, schemaVersion string) (*AssetProfile, error) {
-	return &AssetProfile{
+func NewAssetProfileModel(ctx context.Context, log logger.ContextLog, assetProfile *entities.AssetProfile, schemaVersion string) (*AssetProfileModel, error) {
+	return &AssetProfileModel{
 		ModifiedAt: time.Now().UTC().Unix(),
 		Enabled:    true,
 		Deleted:    false,
