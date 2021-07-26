@@ -134,12 +134,14 @@ func (s *AssetProfileScraper) scrapedHandler(r *colly.Response) {
 	if foundSector == "" {
 		s.log.Error(ctx, "sector not found", "ticker", r.Request.Ctx.Get("ticker"))
 		s.errorTickers = append(s.errorTickers, r.Request.Ctx.Get("ticker"))
+		return
 	}
 
 	foundCountry := r.Ctx.Get("foundCountry")
 	if foundCountry == "" {
 		s.log.Error(ctx, "country not found", "ticker", r.Request.Ctx.Get("ticker"))
 		s.errorTickers = append(s.errorTickers, r.Request.Ctx.Get("ticker"))
+		return
 	}
 }
 
