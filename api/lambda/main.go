@@ -5,13 +5,13 @@ import (
 	"log"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	logger "github.com/hthl85/aws-lambda-logger"
-	"github.com/hthl85/aws-yahoo-asset-profile-scraper/config"
-	"github.com/hthl85/aws-yahoo-asset-profile-scraper/consts"
-	"github.com/hthl85/aws-yahoo-asset-profile-scraper/infrastructure/repositories/repos"
-	"github.com/hthl85/aws-yahoo-asset-profile-scraper/infrastructure/scraper"
-	"github.com/hthl85/aws-yahoo-asset-profile-scraper/usecase/assets"
-	"github.com/hthl85/aws-yahoo-asset-profile-scraper/usecase/profile"
+	logger "github.com/lenoobz/aws-lambda-logger"
+	"github.com/lenoobz/aws-yahoo-asset-profile-scraper/config"
+	"github.com/lenoobz/aws-yahoo-asset-profile-scraper/consts"
+	"github.com/lenoobz/aws-yahoo-asset-profile-scraper/infrastructure/repositories/repos"
+	"github.com/lenoobz/aws-yahoo-asset-profile-scraper/infrastructure/scraper"
+	"github.com/lenoobz/aws-yahoo-asset-profile-scraper/usecase/assets"
+	"github.com/lenoobz/aws-yahoo-asset-profile-scraper/usecase/profile"
 )
 
 func main() {

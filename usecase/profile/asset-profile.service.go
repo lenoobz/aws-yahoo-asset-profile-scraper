@@ -3,8 +3,8 @@ package profile
 import (
 	"context"
 
-	logger "github.com/hthl85/aws-lambda-logger"
-	"github.com/hthl85/aws-yahoo-asset-profile-scraper/entities"
+	logger "github.com/lenoobz/aws-lambda-logger"
+	"github.com/lenoobz/aws-yahoo-asset-profile-scraper/entities"
 )
 
 // Service exposure

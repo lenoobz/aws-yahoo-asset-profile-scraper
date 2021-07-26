@@ -3,7 +3,7 @@ package profile
 import (
 	"context"
 
-	"github.com/hthl85/aws-yahoo-asset-profile-scraper/entities"
+	"github.com/lenoobz/aws-yahoo-asset-profile-scraper/entities"
 )
 
 ///////////////////////////////////////////////////////////
