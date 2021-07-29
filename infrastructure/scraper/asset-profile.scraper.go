@@ -184,9 +184,13 @@ func (s *AssetProfileScraper) processAssetProfileResponse(e *colly.HTMLElement) 
 		}
 
 		if strings.EqualFold(span.Text, "Sector(s)") {
-			foundSector = true
 			firstSibling := span.DOM.Siblings().First()
-			assetProfile.Sector = firstSibling.Text()
+			profileSector := firstSibling.Text()
+
+			if profileSector != "" {
+				foundSector = true
+				assetProfile.Sector = profileSector
+			}
 		}
 	})
 
