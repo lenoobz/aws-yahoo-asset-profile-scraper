@@ -19,7 +19,7 @@ func main() {
 	lambda.Start(lambdaHandler)
 }
 
-func lambdaHandler(ctx context.Context) {
+func lambdaHandler(ctx context.Context) ([]string, error) {
 	log.Println("lambda handler is called")
 
 	appConf := config.AppConf
@@ -60,5 +60,7 @@ func lambdaHandler(ctx context.Context) {
 	// create new scraper job
 	job := scraper.NewAssetProfileScraper(assetService, profileService, zap)
 	job.ScrapeAssetProfilesBySourceFromCheckpoint(consts.TIP_RANK_SOURCE, consts.PAGE_SIZE)
-	defer job.Close()
+
+	tickers := job.Close()
+	return tickers, nil
 }

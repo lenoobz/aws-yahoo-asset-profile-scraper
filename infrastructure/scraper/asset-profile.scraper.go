@@ -24,6 +24,7 @@ type AssetProfileScraper struct {
 	assetService          *assets.Service
 	log                   logger.ContextLog
 	errorTickers          []string
+	scrapedTickers        []string
 }
 
 // NewAssetProfileScraper create new asset profile scraper
@@ -137,7 +138,7 @@ func (s *AssetProfileScraper) ScrapeAssetProfilesBySourceFromCheckpoint(source s
 
 		s.log.Info(ctx, "scraping asset profile", "ticker", asset.Ticker)
 		if err := s.ScrapeAssetProfileJob.Request("GET", url, nil, reqContext, nil); err != nil {
-			s.log.Error(ctx, "scraping asset profile", "error", err, "ticker", asset.Ticker)
+			s.log.Error(ctx, "scraping asset profile failed", "error", err, "ticker", asset.Ticker)
 		}
 	}
 
@@ -228,11 +229,14 @@ func (s *AssetProfileScraper) processAssetProfileResponse(e *colly.HTMLElement) 
 		if err := s.assetProfileService.AddAssetProfile(ctx, &assetProfile); err != nil {
 			s.log.Error(ctx, "add asset profile failed", "error", err, "ticker", assetProfile.Ticker)
 			s.errorTickers = append(s.errorTickers, assetProfile.Ticker)
+		} else {
+			s.scrapedTickers = append(s.scrapedTickers, assetProfile.Ticker)
 		}
 	}
 }
 
 // Close scraper
-func (s *AssetProfileScraper) Close() {
-	s.log.Info(context.Background(), "DONE - SCRAPING ASSET INFO", "errorTickers", s.errorTickers)
+func (s *AssetProfileScraper) Close() []string {
+	s.log.Info(context.Background(), "DONE - SCRAPING ASSET PROFILES", "errorTickers", s.errorTickers)
+	return s.scrapedTickers
 }
