@@ -35,7 +35,7 @@ func main() {
 	if err != nil {
 		log.Fatal("create asset mongo failed")
 	}
-	defer assetProfileRepo.Close()
+	defer assetRepo.Close()
 
 	// create new repository
 	checkpointRepo, err := repos.NewCheckpointMongo(nil, zap, &appConf.Mongo)
