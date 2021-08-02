@@ -90,13 +90,40 @@ func (s *AssetProfileScraper) ScrapeAssetProfilesByTickers(tickers []string) {
 	s.ScrapeAssetProfileJob.Wait()
 }
 
-// ScrapeAssetProfilesByTickers scrape asset profiles by tickers
-func (s *AssetProfileScraper) ScrapeAssetsBySource(source string) {
+// ScrapeAllAssetProfilesBySource scrape asset profiles by sources
+func (s *AssetProfileScraper) ScrapeAllAssetProfilesBySource(source string) {
 	ctx := context.Background()
 
 	s.configJobs()
 
-	assets, err := s.assetService.FindAssetsBySource(ctx, source)
+	assets, err := s.assetService.GetAssetsBySource(ctx, source)
+	if err != nil {
+		s.log.Error(ctx, "scraping asset profile failed", "error", err)
+		return
+	}
+
+	for _, asset := range assets {
+		reqContext := colly.NewContext()
+		reqContext.Put("ticker", asset.Ticker)
+
+		url := config.GetAssetProfileByTickerURL(asset.Ticker)
+
+		s.log.Info(ctx, "scraping asset profile", "ticker", asset.Ticker)
+		if err := s.ScrapeAssetProfileJob.Request("GET", url, nil, reqContext, nil); err != nil {
+			s.log.Error(ctx, "scraping asset profile", "error", err, "ticker", asset.Ticker)
+		}
+	}
+
+	s.ScrapeAssetProfileJob.Wait()
+}
+
+// ScrapeAssetProfilesBySourceFromCheckpoint scrape asset profiles by source from checkpoint
+func (s *AssetProfileScraper) ScrapeAssetProfilesBySourceFromCheckpoint(source string, pageSize int64) {
+	ctx := context.Background()
+
+	s.configJobs()
+
+	assets, err := s.assetService.GetAssetsBySourceFromCheckpoint(ctx, source, pageSize)
 	if err != nil {
 		s.log.Error(ctx, "scraping asset profile failed", "error", err)
 		return

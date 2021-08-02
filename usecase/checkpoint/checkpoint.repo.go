@@ -1,4 +1,4 @@
-package assets
+package checkpoint
 
 import (
 	"context"
@@ -7,18 +7,16 @@ import (
 )
 
 ///////////////////////////////////////////////////////////
-// Assets Repository Interface
+// Asset Price Repository Interface
 ///////////////////////////////////////////////////////////
 
 // Reader interface
 type Reader interface {
-	CountAssetsBySource(context.Context, string) (int64, error)
-	FindAllAssetsBySource(context.Context, string) ([]*entities.Asset, error)
-	FindAssetsBySourceFromCheckpoint(context.Context, string, *entities.Checkpoint) ([]*entities.Asset, error)
 }
 
 // Writer interface
 type Writer interface {
+	UpdateCheckpoint(ctx context.Context, pageSize int64, numAssets int64) (*entities.Checkpoint, error)
 }
 
 // Repo interface

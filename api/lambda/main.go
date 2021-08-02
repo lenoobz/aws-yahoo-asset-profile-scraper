@@ -11,6 +11,7 @@ import (
 	"github.com/lenoobz/aws-yahoo-asset-profile-scraper/infrastructure/repositories/repos"
 	"github.com/lenoobz/aws-yahoo-asset-profile-scraper/infrastructure/scraper"
 	"github.com/lenoobz/aws-yahoo-asset-profile-scraper/usecase/assets"
+	"github.com/lenoobz/aws-yahoo-asset-profile-scraper/usecase/checkpoint"
 	"github.com/lenoobz/aws-yahoo-asset-profile-scraper/usecase/profile"
 )
 
@@ -44,12 +45,20 @@ func lambdaHandler(ctx context.Context) {
 	}
 	defer assetProfileRepo.Close()
 
+	// create new repository
+	checkpointRepo, err := repos.NewCheckpointMongo(nil, zap, &appConf.Mongo)
+	if err != nil {
+		log.Fatal("create checkpoint mongo failed")
+	}
+	defer checkpointRepo.Close()
+
 	// create new service
-	assetService := assets.NewService(assetRepo, zap)
+	checkpointService := checkpoint.NewService(checkpointRepo, zap)
+	assetService := assets.NewService(assetRepo, *checkpointService, zap)
 	profileService := profile.NewService(assetProfileRepo, zap)
 
 	// create new scraper job
 	job := scraper.NewAssetProfileScraper(assetService, profileService, zap)
-	job.ScrapeAssetsBySource(consts.TIP_RANK_SOURCE)
+	job.ScrapeAssetProfilesBySourceFromCheckpoint(consts.TIP_RANK_SOURCE, consts.PAGE_SIZE)
 	defer job.Close()
 }

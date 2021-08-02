@@ -91,8 +91,39 @@ func (r *AssetMongo) Close() {
 // Implement repo interface
 ///////////////////////////////////////////////////////////
 
-// FindAssetsBySource find all assets by source
-func (r *AssetMongo) FindAssetsBySource(ctx context.Context, source string) ([]*entities.Asset, error) {
+// CountAssets count number of assets available
+func (r *AssetMongo) CountAssetsBySource(ctx context.Context, source string) (int64, error) {
+
+	uppercaseSource := strings.ToUpper(source)
+
+	// create new context for the query
+	ctx, cancel := createContext(ctx, r.conf.TimeoutMS)
+	defer cancel()
+
+	// what collection we are going to use
+	colname, ok := r.conf.Colnames[consts.ASSETS_COLLECTION]
+	if !ok {
+		r.log.Error(ctx, "cannot find collection name")
+		return 0, fmt.Errorf("cannot find collection name")
+	}
+	col := r.db.Collection(colname)
+
+	// filter
+	filter := bson.D{
+		{
+			Key:   "source",
+			Value: uppercaseSource,
+		},
+	}
+
+	// find options
+	countOptions := options.Count()
+
+	return col.CountDocuments(ctx, filter, countOptions)
+}
+
+// FindAllAssetsBySource find all assets by source
+func (r *AssetMongo) FindAllAssetsBySource(ctx context.Context, source string) ([]*entities.Asset, error) {
 
 	uppercaseSource := strings.ToUpper(source)
 
@@ -118,6 +149,73 @@ func (r *AssetMongo) FindAssetsBySource(ctx context.Context, source string) ([]*
 
 	// find options
 	findOptions := options.Find()
+
+	cur, err := col.Find(ctx, filter, findOptions)
+
+	// only run defer function when find success
+	if cur != nil {
+		defer func() {
+			if deferErr := cur.Close(ctx); deferErr != nil {
+				err = deferErr
+			}
+		}()
+	}
+
+	// find was not succeed
+	if err != nil {
+		r.log.Error(ctx, "find query failed", "error", err)
+		return nil, err
+	}
+
+	var assets []*entities.Asset
+
+	// iterate over the cursor to decode document one at a time
+	for cur.Next(ctx) {
+		// decode cursor to activity model
+		var asset entities.Asset
+		if err = cur.Decode(&asset); err != nil {
+			r.log.Error(ctx, "decode failed", "error", err)
+			return nil, err
+		}
+
+		assets = append(assets, &asset)
+	}
+
+	if err := cur.Err(); err != nil {
+		r.log.Error(ctx, "iterate over cursor failed", "error", err)
+		return nil, err
+	}
+
+	return assets, nil
+}
+
+// FindAssetsBySourceFromCheckpoint find assets from checkpoint
+func (r *AssetMongo) FindAssetsBySourceFromCheckpoint(ctx context.Context, source string, checkpoint *entities.Checkpoint) ([]*entities.Asset, error) {
+
+	uppercaseSource := strings.ToUpper(source)
+
+	// create new context for the query
+	ctx, cancel := createContext(ctx, r.conf.TimeoutMS)
+	defer cancel()
+
+	// what collection we are going to use
+	colname, ok := r.conf.Colnames[consts.ASSETS_COLLECTION]
+	if !ok {
+		r.log.Error(ctx, "cannot find collection name")
+		return nil, fmt.Errorf("cannot find collection name")
+	}
+	col := r.db.Collection(colname)
+
+	// filter
+	filter := bson.D{
+		{
+			Key:   "source",
+			Value: uppercaseSource,
+		},
+	}
+
+	// find options
+	findOptions := options.Find().SetSort(bson.D{{Key: "_id", Value: -1}}).SetSkip(checkpoint.PageIndex * checkpoint.PageSize).SetLimit(checkpoint.PageSize)
 
 	cur, err := col.Find(ctx, filter, findOptions)
 
